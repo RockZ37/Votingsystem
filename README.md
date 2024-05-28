@@ -87,7 +87,7 @@ describe('DappVotes Contract', () => {
 To set up the DappVotes project locally, follow these steps:
 
     CLONE THE REPOSITORY:
-    -git clone https://github.com/your-username/dappvotes.git
+    -git clone https://github.com/RockZ37/Votingsystem.git
     -cd dappVotes
     
 

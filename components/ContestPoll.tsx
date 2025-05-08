@@ -1,91 +1,154 @@
 import { PollStruct } from '@/utils/types'
 import React, { ChangeEvent, FormEvent, useState } from 'react'
 import { FaTimes } from 'react-icons/fa'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MdCloudUpload } from 'react-icons/md'
 
-const ContestPoll: React.FC<{ poll: PollStruct }> = ({ poll }) => {
-  const contestModal = 'scale-0'
-
+const ContestPoll: React.FC<{ poll: PollStruct; isOpen: boolean; onClose: () => void }> = ({ 
+  poll, 
+  isOpen,
+  onClose 
+}) => {
   const [contestant, setContestant] = useState({
     name: '',
     image: '',
   })
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const [imagePreview, setImagePreview] = useState('')
+  const [error, setError] = useState('')
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setContestant((prevState) => ({
-      ...prevState,
-      [name]: value,
+    setContestant(prev => ({
+      ...prev,
+      [name]: value
     }))
+
+    if (name === 'image' && value) {
+      try {
+        new URL(value)
+        setImagePreview(value)
+        setError('')
+      } catch {
+        setError('Please enter a valid image URL')
+      }
+    }
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (!contestant.name || !contestant.image) {
+      setError('Please fill in all fields')
+      return
+    }
 
-    if (!contestant.name || !contestant.image) return
+    try {
+      new URL(contestant.image)
+    } catch {
+      setError('Please enter a valid image URL')
+      return
+    }
 
     console.log(contestant)
-    closeModal()
+    handleClose()
   }
 
-  const closeModal = () => {
-    setContestant({
-      name: '',
-      image: '',
-    })
+  const handleClose = () => {
+    setContestant({ name: '', image: '' })
+    setImagePreview('')
+    setError('')
+    onClose()
   }
 
   return (
-    <div
-      className={`fixed top-0 left-0 w-screen h-screen flex items-center justify-center
-    bg-black bg-opacity-50 transform z-50 transition-transform duration-300 ${contestModal}`}
-    >
-      <div className="bg-[#0c0c10] text-[#BBBBBB] shadow-lg shadow-[#1B5CFE] rounded-xl w-11/12 md:w-2/5 h-7/12 p-6">
-        <div className="flex flex-col">
-          <div className="flex flex-row justify-between items-center">
-            <p className="font-semibold">Become a Contestant</p>
-            <button onClick={closeModal} className="border-0 bg-transparent focus:outline-none">
-              <FaTimes />
-            </button>
-          </div>
-
-          <form
-            onClick={handleSubmit}
-            className="flex flex-col justify-center items-start rounded-xl mt-5 mb-5"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="w-full max-w-lg bg-dark-200 rounded-2xl shadow-xl"
           >
-            <div className="py-4 w-full border border-[#212D4A] rounded-full flex items-center px-4 mb-3 mt-2">
-              <input
-                placeholder="Contestant Name"
-                className="bg-transparent outline-none w-full placeholder-[#929292] text-sm"
-                name="name"
-                value={contestant.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">Become a Contestant</h2>
+                <button
+                  onClick={handleClose}
+                  className="p-2 rounded-full hover:bg-dark-300 transition-colors"
+                >
+                  <FaTimes className="text-gray-400" />
+                </button>
+              </div>
 
-            <div className="py-4 w-full border border-[#212D4A] rounded-full flex items-center px-4 mb-3 mt-2">
-              <input
-                placeholder="Avater URL"
-                type="url"
-                className="bg-transparent outline-none w-full placeholder-[#929292] text-sm"
-                name="image"
-                accept="image/*"
-                value={contestant.image}
-                onChange={handleChange}
-                required
-              />
-            </div>
+              {error && (
+                <div className="mb-4 p-3 rounded-lg bg-red-500/20 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
 
-            <button
-              className="h-[48px] w-full block mt-2 px-3 rounded-full text-sm font-bold
-                transition-all duration-300 bg-[#1B5CFE] hover:bg-blue-500"
-            >
-              Contest Now
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Contestant Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={contestant.name}
+                    onChange={handleChange}
+                    placeholder="Enter your name"
+                    className="w-full px-4 py-3 rounded-xl bg-dark-300 border border-gray-700 text-white placeholder-gray-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Profile Image URL
+                  </label>
+                  <input
+                    type="url"
+                    name="image"
+                    value={contestant.image}
+                    onChange={handleChange}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-4 py-3 rounded-xl bg-dark-300 border border-gray-700 text-white placeholder-gray-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+
+                {imagePreview ? (
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-dark-300">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video rounded-lg bg-dark-300 flex flex-col items-center justify-center text-gray-400">
+                    <MdCloudUpload size={40} />
+                    <p className="mt-2 text-sm">Image preview will appear here</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-400 transition-colors"
+                >
+                  Register as Contestant
+                </button>
+              </form>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 

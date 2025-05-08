@@ -11,24 +11,30 @@
     "typescript"
   ],
   "scripts": {
-    "dev": "next",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "export": "next build && next export",
     "lint": "next lint",
-    "format": "prettier --ignore-path .gitignore \"pages/**/*.+(ts|js|tsx)\" --write",
-    "postinstall": "husky install"
+    "format": "prettier --ignore-path .gitignore \"**/*.{ts,js,tsx}\" --write",
+    "postinstall": "husky install",
+    "chain": "hardhat node",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "clean": "pnpm dlx rimraf .next node_modules coverage"
   },
   "lint-staged": {
-    "./src/**/*.{ts,js,jsx,tsx}": [
-      "yarn lint --fix",
-      "yarn format"
+    "**/*.{ts,js,jsx,tsx}": [
+      "pnpm lint --fix",
+      "pnpm format"
     ]
   },
   "dependencies": {
     "@openzeppelin/test-helpers": "0.5.16",
     "@reduxjs/toolkit": "1.9.3",
     "ethers": "^5.4.7",
+    "framer-motion": "12.10.1",
     "next": "13.1.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",

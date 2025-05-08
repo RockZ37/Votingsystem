@@ -2,50 +2,79 @@ import { PollStruct } from '@/utils/types'
 import { BsTrash3Fill } from 'react-icons/bs'
 import React from 'react'
 import { FaTimes } from 'react-icons/fa'
+import { motion, AnimatePresence } from 'framer-motion'
 
-const DeletePoll: React.FC<{ poll: PollStruct }> = ({ poll }) => {
-  const deleteModal = 'scale-0'
-
+const DeletePoll: React.FC<{ poll: PollStruct; isOpen: boolean; onClose: () => void }> = ({
+  poll,
+  isOpen,
+  onClose,
+}) => {
   const handleDelete = async () => {
+    // TODO: Implement delete functionality
     console.log(poll)
-    closeModal()
+    onClose()
   }
 
-  const closeModal = () => {}
-
   return (
-    <div
-      className={`fixed top-0 left-0 w-screen h-screen flex items-center justify-center
-    bg-black bg-opacity-50 transform z-50 transition-transform duration-300 ${deleteModal}`}
-    >
-      <div className="bg-[#0c0c10] text-[#BBBBBB] shadow-lg shadow-[#1B5CFE] rounded-xl w-11/12 md:w-2/5 h-7/12 p-6">
-        <div className="flex flex-col">
-          <div className="flex flex-row justify-between items-center">
-            <p className="font-semibold">Delete Poll</p>
-            <button onClick={closeModal} className="border-0 bg-transparent focus:outline-none">
-              <FaTimes />
-            </button>
-          </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="w-full max-w-md bg-dark-200 rounded-2xl shadow-xl"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">Delete Poll</h2>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-full hover:bg-dark-300 transition-colors"
+                >
+                  <FaTimes className="text-gray-400" />
+                </button>
+              </div>
 
-          <div className="flex flex-col justify-center items-center rounded-xl mt-5 mb-5">
-            <div className="flex flex-col justify-center items-center rounded-xl my-5 space-y-2">
-              <BsTrash3Fill className="text-red-600" size={50} />
-              <h4 className="text-[22.65px]">Delete Poll</h4>
-              <p className="text-[14px]">Are you sure you want to delete this question?</p>
-              <small className="text-xs italic">{poll?.title}</small>
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-2">
+                  <BsTrash3Fill className="text-red-400 text-2xl" />
+                </div>
+
+                <h3 className="text-xl font-medium text-white text-center">
+                  Are you sure you want to delete this poll?
+                </h3>
+                
+                <p className="text-gray-400 text-center max-w-sm">
+                  This action cannot be undone. This will permanently delete the poll
+                  <span className="block font-medium text-white mt-2">"{poll?.title}"</span>
+                </p>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-3 rounded-xl bg-dark-300 text-white font-medium hover:bg-dark-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+                >
+                  Delete Poll
+                </button>
+              </div>
             </div>
-
-            <button
-              className="h-[48px] w-full block mt-2 px-3 rounded-full text-sm font-bold
-              transition-all duration-300 bg-red-600 hover:bg-red-500"
-              onClick={handleDelete}
-            >
-              Delete Poll
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 

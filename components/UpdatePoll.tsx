@@ -2,10 +2,14 @@ import { formatTimestamp } from '@/utils/helper'
 import { PollParams, PollStruct } from '@/utils/types'
 import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react'
 import { FaTimes } from 'react-icons/fa'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MdCloudUpload, MdTitle, MdDescription, MdTimer } from 'react-icons/md'
 
-const UpdatePoll: React.FC<{ pollData: PollStruct }> = ({ pollData }) => {
-  const updateModal = 'scale-0'
-
+const UpdatePoll: React.FC<{ pollData: PollStruct; isOpen: boolean; onClose: () => void }> = ({
+  pollData,
+  isOpen,
+  onClose,
+}) => {
   const [poll, setPoll] = useState<PollParams>({
     image: '',
     title: '',
@@ -13,6 +17,9 @@ const UpdatePoll: React.FC<{ pollData: PollStruct }> = ({ pollData }) => {
     startsAt: '',
     endsAt: '',
   })
+
+  const [imagePreview, setImagePreview] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (pollData) {
@@ -24,135 +31,239 @@ const UpdatePoll: React.FC<{ pollData: PollStruct }> = ({ pollData }) => {
         startsAt: formatTimestamp(startsAt),
         endsAt: formatTimestamp(endsAt),
       })
+      setImagePreview(image)
     }
   }, [pollData])
 
-  const handleUpdate = async (e: FormEvent) => {
-    e.preventDefault()
-
-    if (!poll.image || !poll.title || !poll.description || !poll.startsAt || !poll.endsAt) return
-
-    poll.startsAt = new Date(poll.startsAt).getTime()
-    poll.endsAt = new Date(poll.endsAt).getTime()
-
-    console.log(poll)
-    closeModal()
-  }
-
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setPoll((prevState) => ({
-      ...prevState,
-      [name]: value,
+    setPoll(prev => ({
+      ...prev,
+      [name]: value
     }))
+
+    if (name === 'image' && value) {
+      try {
+        new URL(value)
+        setImagePreview(value)
+        setError('')
+      } catch {
+        setError('Please enter a valid image URL')
+      }
+    }
+
+    // Validate dates
+    if ((name === 'startsAt' || name === 'endsAt') && poll.startsAt && poll.endsAt) {
+      const start = new Date(poll.startsAt).getTime()
+      const end = new Date(poll.endsAt).getTime()
+      if (end <= start) {
+        setError('End date must be after start date')
+      } else {
+        setError('')
+      }
+    }
   }
 
-  const closeModal = () => {}
+  const handleUpdate = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!poll.image || !poll.title || !poll.description || !poll.startsAt || !poll.endsAt) {
+      setError('Please fill in all fields')
+      return
+    }
+
+    try {
+      new URL(poll.image)
+    } catch {
+      setError('Please enter a valid image URL')
+      return
+    }
+
+    const start = new Date(poll.startsAt).getTime()
+    const end = new Date(poll.endsAt).getTime()
+    if (end <= start) {
+      setError('End date must be after start date')
+      return
+    }
+
+    console.log({
+      ...poll,
+      startsAt: start,
+      endsAt: end,
+    })
+    handleClose()
+  }
+
+  const handleClose = () => {
+    if (pollData) {
+      const { image, title, description, startsAt, endsAt } = pollData
+      setPoll({
+        image,
+        title,
+        description,
+        startsAt: formatTimestamp(startsAt),
+        endsAt: formatTimestamp(endsAt),
+      })
+      setImagePreview(image)
+    }
+    setError('')
+    onClose()
+  }
 
   return (
-    <div
-      className={`fixed top-0 left-0 w-screen h-screen flex items-center justify-center
-    bg-black bg-opacity-50 transform z-50 transition-transform duration-300 ${updateModal}`}
-    >
-      <div className="bg-[#0c0c10] text-[#BBBBBB] shadow-lg shadow-[#1B5CFE] rounded-xl w-11/12 md:w-2/5 h-7/12 p-6">
-        <div className="flex flex-col">
-          <div className="flex flex-row justify-between items-center">
-            <p className="font-semibold">Edit Poll</p>
-            <button onClick={closeModal} className="border-0 bg-transparent focus:outline-none">
-              <FaTimes />
-            </button>
-          </div>
-
-          <form
-            onSubmit={handleUpdate}
-            className="flex flex-col justify-center items-start rounded-xl mt-5 mb-5"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="w-full max-w-lg bg-dark-200 rounded-2xl shadow-xl"
           >
-            <div className="py-4 w-full border border-[#212D4A] rounded-full flex items-center px-4 mb-3 mt-2">
-              <input
-                placeholder="Poll Title"
-                className="bg-transparent outline-none w-full placeholder-[#929292] text-sm"
-                name="title"
-                value={poll.title}
-                onChange={handleChange}
-                required
-              />
-            </div>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">Update Poll</h2>
+                <button
+                  onClick={handleClose}
+                  className="p-2 rounded-full hover:bg-dark-300 transition-colors"
+                >
+                  <FaTimes className="text-gray-400" />
+                </button>
+              </div>
 
-            <div
-              className="py-4 w-full border border-[#212D4A] rounded-full
-              flex items-center px-4 mb-3 mt-2 space-x-2 relative"
-            >
-              <span
-                className="bg-[#1B5CFE] bg-opacity-20 text-[#4C6AD7]
-                absolute left-[2.5px] py-3 rounded-full px-5 w-48"
-              >
-                <span className="text-transparent">.</span>
-              </span>
-              <input
-                className="bg-transparent outline-none w-full placeholder-transparent text-sm"
-                name="startsAt"
-                type="datetime-local"
-                placeholder="Start Date"
-                value={poll.startsAt}
-                onChange={handleChange}
-                required
-              />
-            </div>
+              {error && (
+                <div className="mb-4 p-3 rounded-lg bg-red-500/20 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
 
-            <div
-              className="py-4 w-full border border-[#212D4A] rounded-full
-              flex items-center px-4 mb-3 mt-2 space-x-2 relative"
-            >
-              <span
-                className="bg-[#1B5CFE] bg-opacity-20 text-[#4C6AD7]
-                absolute left-[2.5px] py-3 rounded-full px-5 w-48"
-              >
-                <span className="text-transparent">.</span>
-              </span>
-              <input
-                className="bg-transparent outline-none w-full placeholder-[#929292] text-sm"
-                name="endsAt"
-                type="datetime-local"
-                value={poll.endsAt}
-                onChange={handleChange}
-                required
-              />
-            </div>
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    <div className="flex items-center gap-2">
+                      <MdTitle className="text-primary-400" />
+                      Poll Title
+                    </div>
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={poll.title}
+                    onChange={handleChange}
+                    placeholder="Enter poll title"
+                    className="w-full px-4 py-3 rounded-xl bg-dark-300 border border-gray-700 text-white placeholder-gray-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
 
-            <div className="py-4 w-full border border-[#212D4A] rounded-full flex items-center px-4 mb-3 mt-2">
-              <input
-                placeholder="Banner URL"
-                type="url"
-                className="bg-transparent outline-none w-full placeholder-[#929292] text-sm"
-                name="image"
-                accept="image/*"
-                value={poll.image}
-                onChange={handleChange}
-                required
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    <div className="flex items-center gap-2">
+                      <MdDescription className="text-primary-400" />
+                      Poll Description
+                    </div>
+                  </label>
+                  <textarea
+                    name="description"
+                    value={poll.description}
+                    onChange={handleChange}
+                    placeholder="Describe your poll"
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-dark-300 border border-gray-700 text-white placeholder-gray-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
+                  />
+                </div>
 
-            <div className="py-4 w-full border border-[#212D4A] rounded-xl flex items-center px-4 h-20 mt-2">
-              <textarea
-                placeholder="Poll Description"
-                className="bg-transparent outline-none w-full placeholder-[#929292] text-sm"
-                name="description"
-                value={poll.description}
-                onChange={handleChange}
-                required
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      <div className="flex items-center gap-2">
+                        <MdTimer className="text-primary-400" />
+                        Start Date
+                      </div>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      name="startsAt"
+                      value={poll.startsAt}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl bg-dark-300 border border-gray-700 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
 
-            <button
-              className="h-[48px] w-full block mt-2 px-3 rounded-full text-sm font-bold
-              transition-all duration-300 bg-[#1B5CFE] hover:bg-blue-500"
-            >
-              Update Poll
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      <div className="flex items-center gap-2">
+                        <MdTimer className="text-primary-400" />
+                        End Date
+                      </div>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      name="endsAt"
+                      value={poll.endsAt}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl bg-dark-300 border border-gray-700 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    <div className="flex items-center gap-2">
+                      <MdCloudUpload className="text-primary-400" />
+                      Banner Image URL
+                    </div>
+                  </label>
+                  <input
+                    type="url"
+                    name="image"
+                    value={poll.image}
+                    onChange={handleChange}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-4 py-3 rounded-xl bg-dark-300 border border-gray-700 text-white placeholder-gray-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+
+                {imagePreview ? (
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-dark-300">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video rounded-lg bg-dark-300 flex flex-col items-center justify-center text-gray-400">
+                    <MdCloudUpload size={40} />
+                    <p className="mt-2 text-sm">Banner preview will appear here</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="flex-1 py-3 rounded-xl bg-dark-300 text-white font-medium hover:bg-dark-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 rounded-xl bg-primary-500 text-white font-medium hover:bg-primary-400 transition-colors"
+                  >
+                    Update Poll
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 

@@ -2,102 +2,129 @@ import { formatDate, truncate } from '@/utils/helper'
 import { PollStruct } from '@/utils/types'
 import Image from 'next/image'
 import React from 'react'
-import { MdModeEdit, MdDelete } from 'react-icons/md'
+import { MdModeEdit, MdDelete, MdHowToVote, MdPeople } from 'react-icons/md'
+import { BiTime, BiCalendar } from 'react-icons/bi'
+import { motion } from 'framer-motion'
 
 const Details: React.FC<{ poll: PollStruct }> = ({ poll }) => {
   const wallet = '' // modify later
+  const now = Date.now()
+  const isActive = now >= poll.startsAt && now < poll.endsAt
+  const isUpcoming = now < poll.startsAt
+  const isEnded = now >= poll.endsAt
 
   return (
-    <>
-      <div
-        className="w-full h-[240px] rounded-[24px]
-        flex items-center justify-center overflow-hidden"
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-6xl mx-auto space-y-8"
+    >
+      <div className="relative h-[300px] md:h-[400px] rounded-3xl overflow-hidden">
         <Image
           className="w-full h-full object-cover"
-          width={3000}
-          height={500}
+          width={1200}
+          height={400}
           src={poll.image}
           alt={poll.title}
+          priority
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl md:text-4xl font-bold">{poll.title}</h1>
+            <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+              isActive ? 'bg-green-500/20 text-green-400' :
+              isUpcoming ? 'bg-primary-500/20 text-primary-400' :
+              'bg-red-500/20 text-red-400'
+            }`}>
+              {isActive ? 'Active' : isUpcoming ? 'Upcoming' : 'Ended'}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div
-        className="flex flex-col items-center justify-center space-y-6
-        mt-5 w-full md:max-w-[736px] mx-auto"
-      >
-        <h1 className="text-[47px] font-[600px] text-center leading-none">{poll.title}</h1>
-        <p className="text-[16px] font-[500px] text-center">{poll.description}</p>
-
-        <div className=" h-[136px] gap-[16px] flex flex-col items-center mt-4">
-          <div
-            className="h-[36px] py-[6px] px-[12px] rounded-full gap-[4px] border 
-            border-gray-400 bg-white bg-opacity-20"
-          >
-            <p className="text-[14px] font-[500px] text-center md:text-[16px]">
-              {formatDate(poll.startsAt)} - {formatDate(poll.endsAt)}
-            </p>
+      <div className="bg-dark-200 rounded-3xl p-6 md:p-8 space-y-6">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
+              <BiCalendar className="text-primary-400 text-xl" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-400">Timeline</p>
+              <p className="text-white">
+                {formatDate(poll.startsAt)} - {formatDate(poll.endsAt)}
+              </p>
+            </div>
           </div>
 
-          <div
-            className="flex items-center justify-center w-[133px] h-[32px]
-                 py-[20px] rounded-[10px] gap-[12px]"
-          >
-            <div className="w-[32px] h-[32px] rounded-full bg-[#1B5CFE]" />
-            <p className="text-[14px] font-[500px]">
-              {truncate({ text: poll.director, startChars: 4, endChars: 4, maxLength: 11 })}
-            </p>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
+              <MdHowToVote className="text-primary-400 text-xl" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-400">Total Votes</p>
+              <p className="text-white">{poll.votes} votes</p>
+            </div>
           </div>
 
-          <div className="h-[36px] gap-[4px] flex justify-center items-center">
-            <button
-              className="py-[6px] px-[12px] border border-gray-400 bg-white bg-opacity-20
-              rounded-full text-[12px] md:text-[16px]"
-            >
-              {poll.votes} votes
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
+              <MdPeople className="text-primary-400 text-xl" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-400">Contestants</p>
+              <p className="text-white">{poll.contestants} participants</p>
+            </div>
+          </div>
+        </div>
 
-            <button
-              className="py-[6px] px-[12px] 
-              border border-gray-400 bg-white bg-opacity-20 rounded-full text-[12px] md:text-[16px]"
-            >
-              {poll.contestants} contestants
-            </button>
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">About this poll</h2>
+          <p className="text-gray-400 leading-relaxed">{poll.description}</p>
+        </div>
 
-            {wallet && wallet === poll.director && poll.votes < 1 && (
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 bg-dark-300 px-4 py-2 rounded-full">
+            <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center">
+              <span className="text-xs text-primary-400">
+                {truncate({ text: poll.director, startChars: 2, endChars: 2, maxLength: 4 })}
+              </span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Created by</p>
+              <p className="text-sm text-white">
+                {truncate({ text: poll.director, startChars: 4, endChars: 4, maxLength: 11 })}
+              </p>
+            </div>
+          </div>
+
+          {wallet && wallet === poll.director && poll.votes < 1 && (
+            <div className="flex items-center gap-2">
               <button
-                className="py-[6px] px-[12px] 
-              border border-gray-400 bg-white bg-opacity-20 rounded-full 
-              text-[12px] md:text-[16px] gap-[8px] flex justify-center items-center"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 transition-colors"
               >
-                <MdModeEdit size={20} className="text-[#1B5CFE]" />
-                Edit poll
+                <MdModeEdit size={20} />
+                <span>Edit poll</span>
               </button>
-            )}
-
-            {wallet && wallet === poll.director && poll.votes < 1 && (
               <button
-                className="py-[6px] px-[12px] 
-              border border-gray-400 bg-white bg-opacity-20 rounded-full 
-              text-[12px] md:text-[16px] gap-[8px] flex justify-center items-center"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
               >
-                <MdDelete size={20} className="text-[#fe1b1b]" />
-                Delete poll
+                <MdDelete size={20} />
+                <span>Delete poll</span>
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {poll.votes < 1 && (
-            <button
-              className="text-black h-[45px] w-[148px] rounded-full transition-all duration-300
-              border border-gray-400 bg-white hover:bg-opacity-20 hover:text-white py-2"
-            >
-              Contest
+            <button className="ml-auto px-6 py-2 rounded-full bg-primary-500 hover:bg-primary-400 text-white transition-all duration-300">
+              Contest Poll
             </button>
           )}
         </div>
       </div>
-    </>
+    </motion.div>
   )
 }
 
